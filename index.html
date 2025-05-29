@@ -1,1 +1,667 @@
-<!-- Your actual index.html content would go here -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <!-- Firebase SDKs -->
+  <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-messaging-compat.js"></script>
+  <link rel="icon" href="favicon.ico" type="image/x-icon">
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Puri Trip Countdown</title>
+  <style>
+    body {
+      margin: 0;
+      padding: 0;
+      height: 100vh;
+      color: #fff;
+      font-family: Arial, sans-serif;
+      background-size: cover;
+      background-position: center center;
+      background-repeat: no-repeat;
+      background-attachment: fixed;
+      display: flex;
+      flex-direction: column;
+      justify-content: flex-start;
+      align-items: center;
+      text-align: center;
+      transition: background-image 0.5s ease;
+    }
+
+    .content {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      z-index: 1;
+      padding: 0 20px;
+      margin-top: .5em;
+    }
+
+    .circle-gallery {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      gap: 10px;
+      flex-wrap: wrap;
+      margin-bottom: 10px;
+    }
+
+    .circle-gallery a {
+      text-decoration: none;
+    }
+
+    .circle {
+      width: 110px;
+      height: 110px;
+      border-radius: 50%;
+      overflow: hidden;
+      border: 3px solid #fff;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: transform 0.3s;
+    }
+
+    .circle img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+    }
+
+    .circle:hover {
+      transform: scale(1.1);
+    }
+
+    h1 {
+      font-size: 2.5em;
+      margin-bottom: 20px;
+    }
+
+    .fade-in {
+      animation: fadeIn 1s ease-in;
+    }
+
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(10px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    .overlay {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background-color: rgba(0, 0, 0, 0.4);
+      z-index: -1;
+    }
+
+    .countdown {
+      font-size: 2rem;
+      font-weight: bold;
+      padding: 15px 25px;
+      border-radius: 15px;
+      background-color: rgba(0, 0, 0, 0.6);
+      box-shadow: 0 0 10px #000;
+      cursor: pointer;
+    }
+
+    .quote {
+      margin-top: 20px;
+      font-size: 1.2rem;
+      color: #fed50d;
+      background-color: rgba(0, 0, 0, 0.5);
+      padding: 10px 15px;
+      border-radius: 10px;
+    }
+
+    #enableNotifications {
+      margin-top: 20px;
+      padding: 15px 30px;
+      font-size: 1rem;
+      background: linear-gradient(135deg, #ff4081, #ff80ab);
+      color: white;
+      border: none;
+      border-radius: 10px;
+      cursor: pointer;
+      transition: background 0.3s ease, transform 0.2s ease;
+    }
+
+    #enableNotifications:hover {
+      background: linear-gradient(135deg, #ff80ab, #ff4081);
+      transform: scale(1.05);
+    }
+
+    .bounce {
+      animation: bounce 1s infinite;
+    }
+
+    @keyframes bounce {
+      0%, 100% { transform: translateY(0); }
+      50% { transform: translateY(-10px); }
+    }
+
+    @media (max-width: 480px) {
+      h1 {
+        font-size: 1.7em;
+      }
+      .countdown {
+        font-size: 1.7rem;
+        padding: 10px 20px;
+      }
+      .quote {
+        font-size: 1rem;
+      }
+      #enableNotifications {
+        padding: 12px 35px;
+        font-size: 1.1rem;
+        margin-top: 25px;
+      }
+      .circle {
+        width: 110px;
+        height: 110px;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="content">
+    <h1 >Squad are You Ready🏖️🤩</h1>
+    <div class="circle-gallery" id="circleGallery"></div>
+
+    <h1 class="fade-in">Puri Trip Countdown 🎉 </h1>
+    <div class="countdown" id="countdown"></div>
+    <div class="quote" id="quote"></div>
+  </div>
+
+  <div class="overlay"></div>
+  <button class="bounce" id="enableNotifications">🔔 Enable Daily Alerts</button>
+
+  <script>
+    // Moved to a single declaration at the top
+const circleData = [
+  { url: 'https://instagram.com/pritam_antamo', img: 'https://firebasestorage.googleapis.com/v0/b/puritripnotifier.firebasestorage.app/o/Pritam.jpg?alt=media&token=b4c2a565-d848-42ea-98e3-80d231821e43' },
+  { url: 'https://instagram.com/i_am_darkrai_09', img: 'https://firebasestorage.googleapis.com/v0/b/puritripnotifier.firebasestorage.app/o/Akash.jpg?alt=media&token=defbc0bb-3697-4ade-9ffb-bfbadf9c754e' },
+  { url: 'https://instagram.com/subhankarroy4921', img: 'https://firebasestorage.googleapis.com/v0/b/puritripnotifier.firebasestorage.app/o/Subhankar.jpg?alt=media&token=45f78f97-08cf-4c93-a808-57acae56d5e0' },
+  { url: 'https://instagram.com/ig.surajit_07', img: 'https://firebasestorage.googleapis.com/v0/b/puritripnotifier.firebasestorage.app/o/Surajit.jpg?alt=media&token=ec8b16de-d16a-417b-86b2-ed06f7882fd9' },
+  { url: 'https://instagram.com/mg_robinyt', img: 'https://firebasestorage.googleapis.com/v0/b/puritripnotifier.firebasestorage.app/o/Robin.jpg?alt=media&token=9e508e48-a640-4ad5-a746-32e52897cc16' }
+];
+    //shuffle function
+    function shuffle(arr) {
+      for (let i = arr.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [arr[i], arr[j]] = [arr[j], arr[i]];
+      }
+      return arr;
+    }
+
+    // Function to render the shuffled gallery
+  function updateCircleGallery() {
+    const container = document.getElementById("circleGallery");
+    const shuffled = shuffle([...circleData]); // clone & shuffle
+
+    container.innerHTML = ''; // Clear old circles
+
+    shuffled.forEach((item, index) => {
+      const circle = document.createElement('a');
+      circle.href = item.url;
+      circle.target = '_blank';
+      circle.className = 'circle';
+      circle.innerHTML = `<img src="${item.img}" alt="squad-${index + 1}" />`;
+      container.appendChild(circle);
+    });
+  }
+
+  // Initial render + refresh every 15 seconds
+  updateCircleGallery();
+  setInterval(updateCircleGallery, 15000);
+  </script>
+
+<script>
+    const beachImages = [
+      "https://images.unsplash.com/vector-1738721814581-91535a14821c",
+      
+      "https://plus.unsplash.com/premium_vector-1716297990326-5f1072541ff1",
+      
+      "https://plus.unsplash.com/premium_vector-1713456459539-b0c286a40406",
+      
+      "https://images.unsplash.com/photo-1507525428034-b723cf961d3e",
+
+      "https://images.unsplash.com/photo-1473116763249-2faaef81ccda",
+      
+      "https://images.unsplash.com/photo-1471922694854-ff1b63b20054",
+      
+      "https://images.unsplash.com/photo-1520942702018-0862200e6873",
+      
+      "https://images.unsplash.com/photo-1468413253725-0d5181091126",
+      
+      "https://images.unsplash.com/photo-1515238152791-8216bfdf89a7",
+      
+      "https://images.unsplash.com/photo-1475924156734-496f6cac6ec1",
+      
+      "https://images.unsplash.com/photo-1432889490240-84df33d47091",
+      
+      "https://images.unsplash.com/photo-1437719417032-8595fd9e9dc6",
+      
+      "https://images.unsplash.com/photo-1443397646383-16272048780e",
+      
+      "https://images.unsplash.com/photo-1521170813716-0b3f42fcfb65",
+      
+      "https://images.unsplash.com/photo-1471357674240-e1a485acb3e1",
+      
+      "https://images.unsplash.com/photo-1424581342241-2b1aba4d3462",
+      
+      "https://images.unsplash.com/photo-1453872302360-eed3c5f8ff66",
+      
+      "https://images.unsplash.com/photo-1541417904950-b855846fe074",
+      
+      "https://images.unsplash.com/photo-1417052800325-788e0eaf22c6",
+      
+      "https://images.unsplash.com/photo-1506744038136-46273834b3fb",
+      
+      "https://images.unsplash.com/photo-1493558103817-58b2924bce98",
+      
+      "https://images.unsplash.com/photo-1507525428034-b723cf961d3e",
+      
+      "https://images.unsplash.com/photo-1506744038136-46273834b3fb",
+      
+      "https://images.unsplash.com/photo-1493558103817-58b2924bce98",
+      
+      "https://images.unsplash.com/photo-1507525428034-b723cf961d3e",
+      
+      "https://images.unsplash.com/photo-1506744038136-46273834b3fb",
+      
+      "https://images.unsplash.com/photo-1493558103817-58b2924bce98",
+      
+      "https://images.unsplash.com/photo-1507525428034-b723cf961d3e",
+      
+      "https://images.unsplash.com/photo-1506744038136-46273834b3fb",
+      
+      "https://images.unsplash.com/photo-1493558103817-58b2924bce98",
+      
+      "https://images.unsplash.com/photo-1507525428034-b723cf961d3e",
+      
+      "https://images.unsplash.com/photo-1506744038136-46273834b3fb",
+      
+      "https://images.unsplash.com/photo-1493558103817-58b2924bce98",
+      
+      "https://images.unsplash.com/photo-1507525428034-b723cf961d3e",
+      
+      "https://images.unsplash.com/photo-1506744038136-46273834b3fb",
+      
+      "https://images.unsplash.com/photo-1493558103817-58b2924bce98",
+      
+      "https://images.unsplash.com/photo-1507525428034-b723cf961d3e",
+      
+      "https://images.unsplash.com/photo-1506744038136-46273834b3fb",
+      
+      "https://images.unsplash.com/photo-1493558103817-58b2924bce98",
+      
+      "https://images.unsplash.com/photo-1507525428034-b723cf961d3e",
+      
+      "https://images.unsplash.com/photo-1506744038136-46273834b3fb",
+      
+      "https://images.unsplash.com/photo-1493558103817-58b2924bce98",
+      
+      "https://images.unsplash.com/photo-1507525428034-b723cf961d3e",
+      
+      "https://images.unsplash.com/photo-1506744038136-46273834b3fb",
+      
+      "https://images.unsplash.com/photo-1493558103817-58b2924bce98",
+      
+      "https://images.unsplash.com/photo-1507525428034-b723cf961d3e",
+      
+      "https://images.unsplash.com/photo-1506744038136-46273834b3fb",
+      
+      "https://images.unsplash.com/photo-1493558103817-58b2924bce98",
+      
+      "https://images.unsplash.com/photo-1507525428034-b723cf961d3e",
+      
+      "https://images.unsplash.com/photo-1506744038136-46273834b3fb",
+      
+      "https://images.unsplash.com/photo-1493558103817-58b2924bce98",
+      
+      "https://images.unsplash.com/photo-1507525428034-b723cf961d3e",
+      
+      "https://images.unsplash.com/photo-1506744038136-46273834b3fb",
+      
+      "https://images.unsplash.com/photo-1493558103817-58b2924bce98",
+      
+      "https://images.unsplash.com/photo-1507525428034-b723cf961d3e",
+      
+      "https://images.unsplash.com/photo-1506744038136-46273834b3fb",
+      
+      "https://images.unsplash.com/photo-1493558103817-58b2924bce98",
+      
+      "https://images.unsplash.com/photo-1507525428034-b723cf961d3e",
+      
+      "https://images.unsplash.com/photo-1506744038136-46273834b3fb",
+      
+      "https://images.unsplash.com/photo-1493558103817-58b2924bce98",
+      
+      "https://images.unsplash.com/photo-1507525428034-b723cf961d3e",
+      
+      "https://images.unsplash.com/photo-1506744038136-46273834b3fb",
+      
+      "https://images.unsplash.com/photo-1493558103817-58b2924bce98",
+      
+      "https://images.unsplash.com/photo-1507525428034-b723cf961d3e",
+      
+      "https://images.unsplash.com/photo-1506744038136-46273834b3fb",
+      
+      "https://images.unsplash.com/photo-1493558103817-58b2924bce98",
+      
+      "https://images.unsplash.com/photo-1507525428034-b723cf961d3e",
+      
+      "https://images.unsplash.com/photo-1506744038136-46273834b3fb",
+      
+      "https://images.unsplash.com/photo-1493558103817-58b2924bce98",
+      
+      "https://images.unsplash.com/photo-1507525428034-b723cf961d3e",
+      
+      "https://images.unsplash.com/photo-1506744038136-46273834b3fb",
+      
+      "https://images.unsplash.com/photo-1493558103817-58b2924bce98",
+      
+      "https://images.unsplash.com/photo-1507525428034-b723cf961d3e",
+      
+      "https://images.unsplash.com/photo-1506744038136-46273834b3fb",
+      
+      "https://images.unsplash.com/photo-1493558103817-58b2924bce98",
+      
+      "https://images.unsplash.com/photo-1507525428034-b723cf961d3e",
+      
+      "https://images.unsplash.com/photo-1506744038136-46273834b3fb",
+      
+      "https://images.unsplash.com/photo-1493558103817-58b2924bce98"
+    ];
+
+    function updateBackgroundImage() {
+      const bg = beachImages[Math.floor(Math.random() * beachImages.length)] + "?auto=format&fit=cover&h=1080";
+      document.body.style.backgroundImage = `url('${bg}')`;
+    }
+
+    updateBackgroundImage(); // show one on load
+    setInterval(updateBackgroundImage, 15000); // rotate every 15 sec
+
+
+    const countdownEl = document.getElementById("countdown");
+    const quoteEl = document.getElementById("quote");
+    const targetDate = new Date("2025-07-18T00:00:00");
+
+    const quotes = [
+      "Time to soak in the sun at Puri Beach! 🌊💙",
+      "Smell the sea and feel the sky - Puri is calling! 🌅✨",
+      "Jagannath’s blessings await you in Puri. 🌴💭",
+      "Only a few days left to sip coconut water on the Puri shores! 🙌🛕",
+      "Get your shades on, Puri’s waiting! 🙌💭",
+      "Sun, sand and serenity – coming soon in Puri! 🚗🛕",
+      "Countdown to beach bliss in Puri begins! ☀️🏖️",
+      "Pack your beachwear, let’s go to Puri! 🏰🛕",
+      "Only a few sunsets away from Puri magic! ✨😎",
+      "Time to soak in the sun at Puri Beach! ☀️🏖️",
+      "Smell the sea and feel the sky - Puri is calling! 🌊💙",
+      "Jagannath’s blessings await you in Puri. 🙏🛕",
+      "Only a few days left to sip coconut water on the Puri shores! 🥥🌴",
+      "Get your shades on, Puri’s waiting! 😎🌞",
+      "Sun, sand and serenity – coming soon in Puri! 🌅✨",
+      "Countdown to beach bliss in Puri begins! 📅🌊",
+      "Pack your beachwear, let’s go to Puri! 👙🧳",
+      "Only a few sunsets away from Puri magic! 🌇🏝️",
+      "Buckle up! Temple vibes and beach tides await in Puri! 🎒🛕🌊",
+      "Can’t stay calm… Puri Trip is almost here! 😍🌴",
+      "Sandcastles and sacred vibes – see you in Puri! 🏰🛕",
+      "Every second brings us closer to Puri! ⏳💫",
+      "Feel the vibe, Puri tribe! 🎉🏖️",
+      "Palm trees, ocean breeze and Puri dreams! 🌴💭",
+      "Just a few days till we meet the sea at Puri! 🌊⏰",
+      "Jagannath calls – are you ready for Puri? 🙌🛕",
+      "Soon we walk the sands of Puri! 👣🌴",
+      "Wave hello to the Bay of Bengal soon! 👋🌊",
+      "Smiles, friends, and Puri adventures await! 😁🧑‍🤝‍🧑🌅",
+      "Puri: Where sunsets heal the soul 🌇🧘",
+      "Suitcases packed with excitement for Puri! 🧳💥",
+      "From city lights to temple sights – en route to Puri! 🚗🛕",
+      "Feet in the sand, heart in the temple – soon in Puri! 👣💓",
+      "Sunblock? Check. Shades? Check. Puri? Coming soon! ☀️🕶️",
+      "Adventure begins where the waves crash – hello Puri! 🌊🌟",
+      "Let’s ride the waves and worship the vibes in Puri! 🏄‍♀️🛕",
+      "Puri packing list: Flip-flops, friends, and faith! 🩴👯‍♀️🙏",
+      "One trip to Puri, a lifetime of memories! 📸💭",
+      "Where every sunrise is a blessing – can’t wait, Puri! 🌅🛕",
+      "Flipping through countdown days till Puri paradise! 📆🏖️",
+      "Almost time to be temple touched and sea kissed! 💋🛕🌊",
+      "Puri: Where divine meets design in every wave 🌊🎨",
+      "Beach vibes and spiritual highs – Puri calling! 🛕🌊",
+      "Good vibes only – powered by Puri! ✨🧘‍♂️",
+      "Who needs therapy when there’s Puri? 💆‍♀️🌴",
+      "Sandy feet & full hearts await in Puri! 👣💗",
+      "Puri countdown mode: Activated! ⏱️🏝️",
+      "Temple steps & ocean dips – Puri here we come! 👣🏊‍♂️",
+      "Ocean breeze & temple peace – only in Puri! 🌬️🛕",
+      "Can you hear the conch? It’s time for Puri! 🐚✨",
+      "Peace, palms, and Puri plans ahead! ☮️🌴🗓️",
+      "That Puri sunshine is worth the wait! ☀️🕰️",
+      "Just a shell’s throw away from the sea – Puri bound! 🐚🌊",
+      "Moments from now: temples, tan lines, and tides 🌞🛕🌊",
+      "Puri energy loading… please stand by! 🔋🛕",
+      "Countdown to coconuts and calm begins! 🥥😌",
+      "Puri, the land of holy sands and heavenly smiles 😊🛕",
+      "Spiritual reset coming soon – destination: Puri! 🔄🛕",
+      "Packing my soul for a sun-kissed journey to Puri! ✨🧳",
+      "Bay breeze and Bhog blessings await in Puri! 🍛🌊",
+      "Just a prayer away from Jagannath and a breeze from the sea! 🙏🌬️",
+      "Flip-flops and faith – essentials for Puri! 🩴🛕",
+      "A few dreams closer to the coast of Puri 🌠🌴",
+      "Soon we’ll lose track of time in the sands of Puri! ⏳🏖️",
+      "Temple tales and sunset trails – all in Puri! 🌅📖",
+      "Nearly time to chase waves & receive grace 🙌🌊",
+      "All roads lead to divine and delightful Puri! 🛣️🛕",
+      "From calendar to coastline – counting down! 📆➡️🏝️",
+      "Puri is calling – let the soul-stirring begin! ☎️❤️",
+      "Puri playlist: waves crashing, bells ringing 🎶🌊🔔",
+      "Spiritual warmth & salty charm loading… 🛕🔥🌊",
+      "Few more steps and we’re in sand-sational Puri! 👣🌞",
+      "Temple towers in sight – journey to Puri starts soon! 🛕👀",
+      "Time to walk the path of peace – Puri route! 🛤️☮️",
+      "From selfies to soul-searching – that’s Puri for you! 🤳🛕",
+      "Countdown to barefoot bliss at Puri Beach 🦶🏖️",
+      "Soon sipping lassi by the bay in Puri! 🥤🌊",
+      "One more tick and we’re off to Puri’s magic! ✔️✨",
+      "Clocking out of chaos, tuning into Puri! ⏰🧘",
+      "Soon the temple chants and ocean chants will unite 🙏🌊",
+      "Puri puzzle pieces: peace, people, and the sea 🧩👫🌊",
+      "The sea breeze knows our name – we’re coming, Puri! 🌬️😄",
+      "Almost time for temple walks and beach talks 👣💬",
+      "Brace yourself for beauty and blessings – Puri awaits! 🛕❤️",
+      "Just a train ride away from temple town! 🚆🛕",
+      "Puri is not a place, it’s a feeling! 🌟🌴",
+      "Let’s swap city noise with temple bells! 🔔🏙️➡️🛕",
+      "Sunrise yoga on the shores of Puri? Yes, please! 🧘‍♀️🌅",
+      "Chasing light and love to the coast of Puri ✨💛",
+      "Divine detour ahead – Puri on the map! 🗺️🛕",
+      "Almost time to taste tradition and touch tranquility! 🍛🧘",
+      "The ocean is calling... and it knows we’re close 🌊☎️",
+      "A few hours to go: Puri peace mode ON! 🔛🌴",
+      "Soon, our hearts will beat with the Bay! ❤️🌊",
+      "Where the sand writes stories and the temple sings songs 📖🛕",
+      "Turn the page – next chapter: Puri! 📖✈️",
+      "Countdown = joy unleashed in Puri! 🎉🌅",
+      "Packing sunshine and spirit for Puri! ☀️🧳",
+      "Puri checklist: Happiness, Holiness & Hammocks ✅🛕🪑",
+      "From hustle to holy hush – heading to Puri! 🏃‍♂️🛕",
+      "The beach is waiting with open arms! 🏖️🤗",
+      "Soon the salt air and temple flair will fill our days 🌬️🛕",
+      "Puri pre-trip jitters? More like joy! 😆🌴",
+      "Spiritual sunrise ahead… Destination: Puri 🌅🛕",
+      "Get ready to unplug, unwind & understand peace! 🔌😌",
+      "Puri mood = Always on 🙌🏝️",
+      "The temple clock is ticking for our arrival! 🛕🕰️",
+      "Nothing but blue skies and divine eyes in Puri! 💙👀",
+      "Brace yourself for Puri perfection! 🤩🌞",
+      "Puri – where every breeze blesses you 🌬️🙏",
+      "Only a few heartbeats away from the coast! ❤️🌊",
+      "Countdown to carefree coastal days begins! 📆🏝️",
+      "Trip goals = Peace, Positivity & Puri ✅☮️",
+      "Suitcase filled with dreams – heading to Puri! 💭🧳",
+      "Soon our souls will dance with the tides! 🕺🌊",
+      "Almost time to walk with purpose on Puri sands 🐾🛕",
+      "Jagannath awaits with open arms! 🙏💫",
+      "Let’s get spiritually salty – destination Puri! 🧂🛕",
+      "Puri sunshine: brighter than any filter! ☀️📸",
+      "Few more zzzs and we’ll be in Puri! 😴➡️🌊",
+      "Touch the divine, breathe the sea – all in Puri 💨🛕",
+      "Shoreline stories & temple glories await us 📚🏝️",
+      "Here we go! Puri in just a blink! 👁️✈️",
+      "Puri playlist ready – let’s hit play on the memories 🎶💿",
+      "The sand is ready to greet our feet! 👣💛",
+      "Puri… where even the breeze has a prayer 🌬️🙏",
+      "Destination peace. Destination Puri. ☮️🛕",
+      "On a journey to the sacred shores of Puri 🌊🛕",
+      "The holy hush of Puri is calling 🛕🔕",
+      "Our hearts are packed. Let’s go to Puri! 💼❤️",
+      "From deadlines to divine lines – Puri is next! 🗓️🛕",
+      "See you at sunrise, Puri 🌅👋",
+    ];
+
+    function updateCountdown() {
+      const now = new Date();
+      const diff = targetDate - now;
+
+      const days = Math.floor(diff / (1000 * 60 * 60 * 24));
+      const hours = Math.floor((diff / (1000 * 60 * 60)) % 24);
+      const minutes = Math.floor((diff / 1000 / 60) % 60);
+      const seconds = Math.floor((diff / 1000) % 60);
+
+      countdownEl.textContent = `${days}d ${hours}h ${minutes}m ${seconds}s to Puri!`;
+    }
+
+    function updateQuote() {
+      const randomIndex = Math.floor(Math.random() * quotes.length);
+      quoteEl.textContent = quotes[randomIndex];
+    }
+
+    updateCountdown();
+    updateQuote();
+    setInterval(updateCountdown, 1000);
+    setInterval(updateQuote, 15000);
+
+    document.getElementById("enableNotifications").addEventListener("click", () => {
+      Notification.requestPermission().then(permission => {
+        if (permission === "granted") {
+          new Notification("🌞 Puri Countdown", {
+            body: countdownEl.textContent,
+            icon: "https://cdn-icons-png.flaticon.com/512/168/168882.png"
+          });
+        }
+      });
+    });
+  </script>
+
+
+  <script type="module">
+    
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/9.6.10/firebase-app.js";
+    import { getMessaging, getToken, onMessage } from "https://www.gstatic.com/firebasejs/9.6.10/firebase-messaging.js";
+
+    // Fetch safe Firebase config securely from backend
+    fetch("https://us-central1-puritripnotifier.cloudfunctions.net/getFirebaseConfig")
+      .then(res => res.json())
+      .then(config => {
+        const app = initializeApp(config);
+        const messaging = getMessaging(app);
+
+        // Get and send tokens
+        getToken(messaging, {
+          vapidKey: "BKg8aLreF-ymZGnGqZsiQ-_Hoptz-14WbQ8sxSKu1kuBJSeMxZ1DUa3sz2LZ0IRxNpfRRQ7smSq8KR1ReizwmNo"
+        })
+        .then((currentToken) => {
+          if (currentToken) {
+            console.log("🔥 FCM Token:", currentToken);
+
+            fetch("https://us-central1-puritripnotifier.cloudfunctions.net/saveToken", {
+              method: "POST",
+              headers: {
+                "Content-Type": "application/json"
+              },
+              body: JSON.stringify({ token: currentToken })
+            })
+            .then(res => res.text())
+            .then(msg => console.log("✅ Token saved:", msg))
+            .catch(err => console.error("❌ Token save failed:", err));
+          } else {
+            console.warn("⚠️ No registration token available.");
+          }
+        })
+        .catch(err => console.error("❌ Token error:", err));
+      })
+      .catch(err => console.error("❌ Firebase config load failed:", err));
+  </script>
+
+
+
+
+  <!-- 👨‍💻 ✅Secret Admin Form (Only you know it exists) -->
+
+  <script>
+      window.onload = function () {
+        if (window.location.hash === '#admin') {
+          const form = document.createElement('form');
+          form.innerHTML = `
+            <div style="position:fixed;bottom:10px;left:10px;background:#fff;padding:12px;border-radius:8px;box-shadow:0 0 10px rgba(0,0,0,0.3);z-index:9999;font-family:sans-serif">
+              <h3>📢 Admin Login</h3>
+              <input type="password" id="adminPassword" placeholder="🔒 Password" style="margin-bottom:6px;width:100%"><br>
+              <input type="text" id="adminToken" placeholder="🔢 2FA Code" style="margin-bottom:6px;width:100%"><br>
+              <button type="button" onclick="verifyLogin()">Login</button>
+            </div>
+          `;
+          document.body.appendChild(form);
+        }
+      };
+
+      async function verifyLogin() {
+        const password = document.getElementById('adminPassword').value;
+        const token = document.getElementById('adminToken').value;
+
+        const res = await fetch('https://us-central1-puritripnotifier.cloudfunctions.net/verifyAdminLogin', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ password, token })
+        });
+
+        const text = await res.text();
+        if (res.ok) {
+          alert("✅ Login successful");
+
+          const panel = document.createElement('div');
+          panel.innerHTML = `
+            <div style="position:fixed;bottom:10px;left:10px;background:#fff;padding:12px;border-radius:8px;box-shadow:0 0 10px rgba(0,0,0,0.3);z-index:9999;font-family:sans-serif">
+              <h3>📢 Admin Panel</h3>
+              <input type="text" id="title" placeholder="Title" style="margin-bottom:6px;width:100%"><br>
+              <textarea id="body" placeholder="Body" style="margin-bottom:6px;width:100%;height:50px"></textarea><br>
+              <button onclick="sendNotification()">Send Notification</button>
+            </div>
+          `;
+          document.body.appendChild(panel);
+        } else {
+          alert("❌ Login failed: " + text);
+        }
+    }
+
+    async function sendNotification() {
+      const title = document.getElementById('title').value;
+      const body = document.getElementById('body').value;
+
+      const res = await fetch('https://us-central1-puritripnotifier.cloudfunctions.net/sendCustomNotification', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ title, body })
+      });
+
+      alert(await res.text());
+    }
+  </script>
+
+
+
+</body>
+</html>
